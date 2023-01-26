@@ -47,29 +47,38 @@ def collect_highlights(item, highlights):
         if soup.div is None:
             continue
         for p in soup.find_all('p'):
-            highlight = None
+            highlight_tags = []
             for tag in p.select('span.highlight'):
-                highlight = tag.extract()
+                highlight_tags.append(tag.extract())
             for tag in p.select('span.citation'):
                 tag.decompose()
             annotation = p.get_text(strip=True)
             highlights.append(format_highlight(
-                article.copy(), highlight, annotation))
+                article.copy(), highlight_tags, annotation))
 
 
-def format_highlight(entry, highlight, annotation):
-    if highlight is None:
+def get_highlight_text(highlight):
+    text = BeautifulSoup(str(highlight).replace(
+        "<br/>", "\n"), 'html.parser').get_text().strip()
+    if text.startswith('“') and text.endswith('”'):
+        return text[1:-1]
+    return text
+
+
+def format_highlight(entry, highlight_tags, annotation):
+    if len(highlight_tags) == 0:
         entry['text'] = annotation
         return entry
 
-    entry['text'] = BeautifulSoup(str(highlight).replace(
-        "<br/>", "\n"), 'html.parser').get_text().strip()
-    if entry['text'].startswith('“') and entry['text'].endswith('”'):
-        entry['text'] = entry['text'][1:-1]
+    entry['text'] = '…'.join(get_highlight_text(h) for h in highlight_tags)
 
     if annotation != '':
-        entry['note'] = annotation
-    data = json.loads(urllib.parse.unquote(highlight['data-annotation']))
+        if annotation.startswith('.') and '\n' not in annotation:
+            entry['note'] = annotation + '\n'
+        else:
+            entry['note'] = annotation
+    data = json.loads(urllib.parse.unquote(
+        highlight_tags[0]['data-annotation']))
     item_key = data['attachmentURI'].split('/')[-1]
     entry['location_type'] = 'page'
     entry['location'] = int(data['pageLabel'])
