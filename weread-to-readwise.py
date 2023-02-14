@@ -5,6 +5,8 @@ import json
 from urllib.request import urlopen, Request
 
 
+# TODO: notes
+
 # Example:
 #
 # ```
@@ -80,6 +82,7 @@ def collect_highlights(lines):
     if pending_article is not None:
         result.append(pending_article)
     return result
+
 
 def main(token, args):
     dry_run = args[1] == '-n' if len(sys.argv) > 1 else False
