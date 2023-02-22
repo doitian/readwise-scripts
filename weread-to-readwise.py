@@ -61,13 +61,17 @@ def collect_highlights(lines):
             pending_article['note'] = line[:3]
             result.append(pending_article)
             pending_article = None
+        elif line.endswith('发表想法'):
+            if pending_article is not None:
+                result.append(pending_article)
+            pending_article = article.copy()
         elif line.startswith('>> '):
             if pending_article is None:
                 pending_article = article.copy()
-            if pending_article is not None:
-                pending_article['text'] = line[3:]
-            else:
-                raise RuntimeError('expect pending article')
+            elif 'text' in pending_article:
+                result.append(pending_article)
+                pending_article = article.copy()
+            pending_article['text'] = line[3:]
         elif line.startswith('https://'):
             if pending_article is not None:
                 pending_article['highlight_url'] = line
@@ -77,7 +81,14 @@ def collect_highlights(lines):
             else:
                 raise RuntimeError('expect pending article')
         elif pending_article is not None:
-            raise RuntimeError('unexpected line: ' + line)
+            if 'text' in pending_article:
+                pending_article['text'] += "\n"
+                pending_article['text'] += line
+            elif 'note' in pending_article:
+                pending_article['note'] += "\n"
+                pending_article['note'] += line
+            else:
+                pending_article['note'] = line
 
     if pending_article is not None:
         result.append(pending_article)
