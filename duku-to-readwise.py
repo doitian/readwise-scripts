@@ -36,6 +36,8 @@ def collect_highlights(lines):
 
         if line.startswith('## 《') and line.endswith('》'):
             article['title'] = '读库 - ' + line[4:-1]
+        elif line.startswith('## '):
+            article['title'] = '读库 - ' + line[3:]
         elif line.startswith('**'):
             article['author'] = line.split('**')[1].strip()
         elif line.startswith('> '):
