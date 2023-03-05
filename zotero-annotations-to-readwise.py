@@ -43,7 +43,7 @@ def collect_highlights(item, highlights):
         notes = json.loads(resp.read().decode('utf-8'))['result'][item['id']]
 
     for note in notes:
-        soup = BeautifulSoup(note, 'html.parser')
+        soup = BeautifulSoup(replace_br(note), 'html.parser')
         if soup.div is None:
             continue
         for p in soup.find_all('p'):
@@ -57,9 +57,13 @@ def collect_highlights(item, highlights):
                 article.copy(), highlight_tags, annotation))
 
 
+def replace_br(html):
+    return str(html).replace("<br/>", "\n").replace("<br>", "\n")
+
+
 def get_highlight_text(highlight):
-    text = BeautifulSoup(str(highlight).replace(
-        "<br/>", "\n"), 'html.parser').get_text().strip()
+    text = BeautifulSoup(replace_br(highlight),
+                         'html.parser').get_text().strip()
     if text.startswith('“') and text.endswith('”'):
         return text[1:-1]
     return text
@@ -87,11 +91,57 @@ def format_highlight(entry, highlight_tags, annotation):
     return entry
 
 
-def main(token, dry_run=False):
+def is_title(entry):
+    return 'note' in entry and entry['note'] != '' and entry['note'].split()[0] in ['.h1', '.h2', '.h3']
+
+
+def is_concatenating(entry):
+    return 'note' in entry and entry['note'] != '' and entry['note'].split()[0] in ['.c1', '.c2', '.c3', '.c4', '.c5']
+
+
+def concatenate_highlights(highlights):
+    result = highlights[0]
+    result['text'] = ' '.join(entry['text'] for entry in highlights)
+    notes = []
+    for entry in highlights:
+        entry_note = entry['note'][3:].strip()
+        if entry_note != '':
+            notes.append(entry_note)
+    if len(notes) > 0:
+        result['note'] = "\n".join(notes)
+    else:
+        del result['note']
+
+    return result
+
+
+def squash_concatenating_highlights(highlights):
+    pending_spans = []
+    for entry in highlights:
+        if is_concatenating(entry):
+            if entry['note'].split()[0] == '.c1':
+                if len(pending_spans) > 0:
+                    yield concatenate_highlights(pending_spans)
+                pending_spans = [entry]
+            else:
+                pending_spans.append(entry)
+        else:
+            if len(pending_spans) > 0:
+                yield concatenate_highlights(pending_spans)
+                pending_spans = []
+            yield entry
+
+    if len(pending_spans) > 0:
+        yield concatenate_highlights(pending_spans)
+
+
+def main(token, user_agent, dry_run=False):
     items = get_items()
     highlights = []
     for item in items:
         collect_highlights(item, highlights)
+
+    highlights = list(squash_concatenating_highlights(highlights))
 
     if dry_run:
         print(json.dumps(highlights, indent=2))
@@ -102,7 +152,8 @@ def main(token, dry_run=False):
         headers={
             'Authorization': f'Token {token}',
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            'User-Agent': user_agent
         },
         data=json.dumps({'highlights': highlights}).encode('utf-8'),
         method='POST',
@@ -115,4 +166,4 @@ if __name__ == '__main__':
     import os
 
     dry_run = sys.argv[1] == '-n' if len(sys.argv) > 1 else False
-    main(os.environ['READWISE_TOKEN'], dry_run)
+    main(os.environ['READWISE_TOKEN'], os.environ['USER_AGENT'], dry_run)
