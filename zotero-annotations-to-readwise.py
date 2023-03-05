@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import utils
 from titlecase import titlecase
 import json
 import urllib.parse
@@ -135,7 +136,7 @@ def squash_concatenating_highlights(highlights):
         yield concatenate_highlights(pending_spans)
 
 
-def main(token, user_agent, dry_run=False):
+def main(dry_run=False):
     items = get_items()
     highlights = []
     for item in items:
@@ -147,23 +148,11 @@ def main(token, user_agent, dry_run=False):
         print(json.dumps(highlights, indent=2))
         return
 
-    req = Request(
-        'https://readwise.io/api/v2/highlights/',
-        headers={
-            'Authorization': f'Token {token}',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'User-Agent': user_agent
-        },
-        data=json.dumps({'highlights': highlights}).encode('utf-8'),
-        method='POST',
-    )
-    urlopen(req)
+    utils.create_highlights(highlights)
 
 
 if __name__ == '__main__':
     import sys
-    import os
 
     dry_run = sys.argv[1] == '-n' if len(sys.argv) > 1 else False
-    main(os.environ['READWISE_TOKEN'], os.environ['USER_AGENT'], dry_run)
+    main(dry_run)
