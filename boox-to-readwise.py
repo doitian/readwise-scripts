@@ -2,7 +2,7 @@
 
 import fileinput
 import json
-from urllib.request import urlopen, Request
+import utils
 
 # TODO: notes
 
@@ -23,8 +23,9 @@ from urllib.request import urlopen, Request
 # -------------------
 # ```
 # https://weread.qq.com/web/reader/43132e60813ab7439g011388kd67323c0227d67d8ab4fb04#2
+
+
 def collect_highlights(lines):
-    seen_highlight_urls = set()
     last_auto_title = None
     auto_title_level = 1
 
@@ -70,7 +71,8 @@ def collect_highlights(lines):
                 raise RuntimeError('expect new pending article: ' + line)
             pending_article['location_type'] = 'page'
             pending_article['location'] = int(line.split('Page No.: ')[1])
-            pending_article['highlighted_at'] = line.split('  |  ')[0].replace(' ', 'T') + ':00+08:00'
+            pending_article['highlighted_at'] = line.split(
+                '  |  ')[0].replace(' ', 'T') + ':00+08:00'
             for prev_article in reversed(result):
                 if 'location' in prev_article:
                     break
@@ -83,7 +85,8 @@ def collect_highlights(lines):
             pending_article = article.copy()
         elif pending_article is not None and 'location' in pending_article:
             if 'text' in pending_article:
-                pending_article['text'] = "\n".join([pending_article['text'], line])
+                pending_article['text'] = "\n".join(
+                    [pending_article['text'], line])
             else:
                 pending_article['text'] = line
         elif pending_article is not None:
@@ -109,7 +112,8 @@ def collect_highlights(lines):
 
     return result
 
-def main(token, args):
+
+def main(args):
     dry_run = args[1] == '-n' if len(sys.argv) > 1 else False
     input_args = args[1:] if not dry_run else args[2:]
     highlights = collect_highlights(fileinput.input(input_args))
@@ -118,21 +122,10 @@ def main(token, args):
         print(json.dumps(highlights, indent=2, ensure_ascii=False))
         return
 
-    req = Request(
-        'https://readwise.io/api/v2/highlights/',
-        headers={
-            'Authorization': f'Token {token}',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        },
-        data=json.dumps({'highlights': highlights}).encode('utf-8'),
-        method='POST',
-    )
-    urlopen(req)
+    utils.create_highlights(highlights)
 
 
 if __name__ == '__main__':
     import sys
-    import os
 
-    main(os.environ['READWISE_TOKEN'], sys.argv)
+    main(sys.argv)
