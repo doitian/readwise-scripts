@@ -86,11 +86,3 @@ def create_highlights(highlights, token=None, user_agent=None):
     if len(items) == 1 and len(items[0]['modified_highlights']) == len(highlights):
         add_tags(highlights, items[0]
                  ['modified_highlights'], token, user_agent)
-
-
-if __name__ == '__main__':
-    import sys
-    import os
-
-    dry_run = sys.argv[1] == '-n' if len(sys.argv) > 1 else False
-    main(os.environ['READWISE_TOKEN'], os.environ['USER_AGENT'], dry_run)
