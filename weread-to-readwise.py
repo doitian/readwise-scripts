@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
+import utils
 import fileinput
 import json
-from urllib.request import urlopen, Request
 
 
 # TODO: notes
@@ -95,7 +95,7 @@ def collect_highlights(lines):
     return result
 
 
-def main(token, args):
+def main(args):
     dry_run = args[1] == '-n' if len(sys.argv) > 1 else False
     input_args = args[1:] if not dry_run else args[2:]
     highlights = collect_highlights(fileinput.input(input_args))
@@ -104,21 +104,10 @@ def main(token, args):
         print(json.dumps(highlights, indent=2, ensure_ascii=False))
         return
 
-    req = Request(
-        'https://readwise.io/api/v2/highlights/',
-        headers={
-            'Authorization': f'Token {token}',
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-        },
-        data=json.dumps({'highlights': highlights}).encode('utf-8'),
-        method='POST',
-    )
-    urlopen(req)
+    utils.create_highlights(highlights)
 
 
 if __name__ == '__main__':
     import sys
-    import os
 
-    main(os.environ['READWISE_TOKEN'], sys.argv)
+    main(sys.argv)
