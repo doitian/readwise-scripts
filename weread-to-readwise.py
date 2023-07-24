@@ -53,18 +53,24 @@ def collect_highlights(lines):
             article['author'] = line
         elif article['source_url'] is None and line.startswith('https://'):
             article['source_url'] = line
-        elif line.startswith('.h1 ') or line.startswith('.h2 ') or line.startswith('.h3 '):
+        elif line.startswith('.h1 ') or line.startswith('.h2 ') \
+                or line.startswith('.h3 ') or line.startswith('◆ '):
             if pending_article is not None:
                 result.append(pending_article)
             pending_article = article.copy()
-            pending_article['text'] = line[4:]
-            pending_article['note'] = line[:3]
+            if line.startswith('◆ '):
+                pending_article['text'] = line[1:].lstrip()
+                pending_article['note'] = '.h1'
+            else:
+                pending_article['text'] = line[4:]
+                pending_article['note'] = line[:3]
             result.append(pending_article)
             pending_article = None
         elif line.endswith('发表想法'):
             if pending_article is not None:
                 result.append(pending_article)
             pending_article = article.copy()
+            pending_article['note'] = ''
         elif line.startswith('>> '):
             if pending_article is None:
                 pending_article = article.copy()
@@ -81,12 +87,13 @@ def collect_highlights(lines):
             else:
                 raise RuntimeError('expect pending article')
         elif pending_article is not None:
-            if 'text' in pending_article:
+            if 'note' in pending_article:
+                if pending_article['note'] != '':
+                    pending_article['note'] += "\n"
+                pending_article['note'] += line
+            elif 'text' in pending_article:
                 pending_article['text'] += "\n"
                 pending_article['text'] += line
-            elif 'note' in pending_article:
-                pending_article['note'] += "\n"
-                pending_article['note'] += line
             else:
                 pending_article['note'] = line
 

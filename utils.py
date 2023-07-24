@@ -1,10 +1,13 @@
 import os
 from urllib.request import urlopen, Request
+from urllib.error import HTTPError
 import json
+import time
 
 
 def is_concatenating(entry):
-    return 'note' in entry and entry['note'] != '' and entry['note'].split()[0] in ['.c1', '.c2', '.c3', '.c4', '.c5']
+    return 'note' in entry and entry['note'] != '' and \
+        entry['note'].split()[0] in ['.c1', '.c2', '.c3', '.c4', '.c5']
 
 
 def concatenate_highlights(highlights):
@@ -84,5 +87,10 @@ def create_highlights(highlights, token=None, user_agent=None):
 
     items = json.loads(resp.read().decode('utf-8'))
     if len(items) == 1 and len(items[0]['modified_highlights']) == len(highlights):
-        add_tags(highlights, items[0]
-                 ['modified_highlights'], token, user_agent)
+        try:
+            add_tags(highlights, items[0]
+                     ['modified_highlights'], token, user_agent)
+        except HTTPError:
+            time.sleep(3)
+            add_tags(highlights, items[0]
+                     ['modified_highlights'], token, user_agent)
