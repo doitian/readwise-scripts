@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# ruff: noqa: E501
+
 import utils
 from titlecase import titlecase
 import json
