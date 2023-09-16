@@ -91,6 +91,6 @@ def create_highlights(highlights, token=None, user_agent=None):
             add_tags(highlights, items[0]
                      ['modified_highlights'], token, user_agent)
         except HTTPError:
-            time.sleep(3)
+            time.sleep(5)
             add_tags(highlights, items[0]
                      ['modified_highlights'], token, user_agent)

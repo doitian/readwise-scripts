@@ -19,7 +19,7 @@ import json
 #
 # .h2 4
 #
-# >> 倾听别人的意见，不断检验自己的做法、想法是否正确，这无论对肉体还是精神来说都是很大的负担。相比之下，不听别人的意见，固执地坚持自己的想法就很轻松。贪图轻松的人就是懒汉，我说错了吗？
+# >> 倾听别人的意见，不断检验自己的做法、想法是否正确，这无论对肉体...
 #
 # https://weread.qq.com/web/reader/43132e60813ab7439g011388k02e32f0021b02e74f10ece8#1
 #
@@ -27,7 +27,7 @@ import json
 #
 # .h2 7
 #
-# >> 您所说的抵抗，在我看来是令人钦佩的努力。我认为努力不会白费，即使在棒球上没能取得成果，今后也必定会发挥作用
+# >> 您所说的抵抗，在我看来是令人钦佩的努力。我认为努力不会白费，即使...
 # ```
 # https://weread.qq.com/web/reader/43132e60813ab7439g011388kd67323c0227d67d8ab4fb04#2
 def collect_highlights(lines):
@@ -42,9 +42,11 @@ def collect_highlights(lines):
     }
     result = []
     pending_article = None
+    pending_text = False
     for line in lines:
         line = line.strip()
         if line == '':
+            pending_text = False
             continue
 
         if line.startswith('《') and line.endswith('》'):
@@ -70,13 +72,13 @@ def collect_highlights(lines):
             if pending_article is not None:
                 result.append(pending_article)
             pending_article = article.copy()
-            pending_article['note'] = ''
         elif line.startswith('>> '):
             if pending_article is None:
                 pending_article = article.copy()
             elif 'text' in pending_article:
                 result.append(pending_article)
                 pending_article = article.copy()
+            pending_text = True
             pending_article['text'] = line[3:]
         elif line.startswith('https://'):
             if pending_article is not None:
@@ -87,7 +89,10 @@ def collect_highlights(lines):
             else:
                 raise RuntimeError('expect pending article')
         elif pending_article is not None:
-            if 'note' in pending_article:
+            if pending_text and 'text' in pending_article:
+                pending_article['text'] += "\n"
+                pending_article['text'] += line
+            elif 'note' in pending_article:
                 if pending_article['note'] != '':
                     pending_article['note'] += "\n"
                 pending_article['note'] += line
