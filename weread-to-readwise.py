@@ -7,12 +7,13 @@ import json
 
 # TODO: notes
 
+
 # Example:
 #
 # ```
 # 《虚像的丑角》
 # 东野圭吾
-# https://weread.qq.com/web/bookDetail/43132e60813ab7439g011388
+# <https://weread.qq.com/web/bookDetail/43132e60813ab7439g011388>
 # 2个笔记
 #
 # .h1 第三章听心
@@ -34,73 +35,79 @@ def collect_highlights(lines):
     seen_highlight_urls = set()
 
     article = {
-        'title': None,
-        'author': None,
-        'source_url': None,
-        'source_type': 'Weread',
-        'category': 'books'
+        "title": None,
+        "author": None,
+        "source_url": None,
+        "source_type": "Weread",
+        "category": "books",
     }
     result = []
     pending_article = None
     pending_text = False
     for line in lines:
         line = line.strip()
-        if line == '':
+        if line == "":
             pending_text = False
             continue
 
-        if line.startswith('《') and line.endswith('》'):
-            article['title'] = line[1:-1]
-        elif article['author'] is None:
-            article['author'] = line
-        elif article['source_url'] is None and line.startswith('https://'):
-            article['source_url'] = line
-        elif line.startswith('.h1 ') or line.startswith('.h2 ') \
-                or line.startswith('.h3 ') or line.startswith('◆ '):
+        if line.startswith("《") and line.endswith("》"):
+            article["title"] = line[1:-1]
+        elif article["author"] is None:
+            article["author"] = line
+        elif article["source_url"] is None and (
+            line.startswith("https://") or line.startswith("<https://")
+        ):
+            article["source_url"] = line if line.startswith("https://") else line[1:-1]
+        elif (
+            line.startswith(".h1 ")
+            or line.startswith(".h2 ")
+            or line.startswith(".h3 ")
+            or line.startswith("◆ ")
+        ):
             if pending_article is not None:
                 result.append(pending_article)
             pending_article = article.copy()
-            if line.startswith('◆ '):
-                pending_article['text'] = line[1:].lstrip()
-                pending_article['note'] = '.h1'
+            if line.startswith("◆ "):
+                pending_article["text"] = line[1:].lstrip()
+                pending_article["note"] = ".h1"
             else:
-                pending_article['text'] = line[4:]
-                pending_article['note'] = line[:3]
+                pending_article["text"] = line[4:]
+                pending_article["note"] = line[:3]
             result.append(pending_article)
             pending_article = None
-        elif line.endswith('发表想法'):
+        elif line.endswith("发表想法"):
             if pending_article is not None:
                 result.append(pending_article)
             pending_article = article.copy()
-        elif line.startswith('>> '):
+        elif line.startswith(">> "):
             if pending_article is None:
                 pending_article = article.copy()
-            elif 'text' in pending_article:
+            elif "text" in pending_article:
                 result.append(pending_article)
                 pending_article = article.copy()
             pending_text = True
-            pending_article['text'] = line[3:]
-        elif line.startswith('https://'):
+            pending_article["text"] = line[3:]
+        elif line.startswith("https://"):
             if pending_article is not None:
-                pending_article['highlight_url'] = line
+                pending_article["highlight_url"] = line
                 if line in seen_highlight_urls:
-                    raise RuntimeError('duplicated highlight url: ' + line)
+                    raise RuntimeError("duplicated highlight url: " + line)
                 seen_highlight_urls.add(line)
             else:
-                raise RuntimeError('expect pending article')
+                raise RuntimeError("expect pending article")
         elif pending_article is not None:
-            if pending_text and 'text' in pending_article:
-                pending_article['text'] += "\n"
-                pending_article['text'] += line
-            elif 'note' in pending_article:
-                if pending_article['note'] != '':
-                    pending_article['note'] += "\n"
-                pending_article['note'] += line
-            elif 'text' in pending_article:
-                pending_article['text'] += "\n"
-                pending_article['text'] += line
+            if pending_text and "text" in pending_article:
+                pending_article["text"] += "\n"
+                pending_article["text"] += line
+            elif "note" in pending_article:
+                if pending_article["note"] != "":
+                    pending_article["note"] += "\n"
+                pending_article["note"] += line
+            elif "text" in pending_article:
+                pending_article["text"] += "\n"
+                pending_article["text"] += line
             else:
-                pending_article['note'] = line
+                pending_article["note"] = line
 
     if pending_article is not None:
         result.append(pending_article)
@@ -108,7 +115,7 @@ def collect_highlights(lines):
 
 
 def main(args):
-    dry_run = args[1] == '-n' if len(sys.argv) > 1 else False
+    dry_run = args[1] == "-n" if len(sys.argv) > 1 else False
     input_args = args[1:] if not dry_run else args[2:]
     highlights = collect_highlights(fileinput.input(input_args))
 
@@ -119,7 +126,7 @@ def main(args):
     utils.create_highlights(highlights)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
 
     main(sys.argv)
