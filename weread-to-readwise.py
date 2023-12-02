@@ -82,7 +82,7 @@ def collect_highlights(lines):
         elif line.startswith(">> "):
             if pending_article is None:
                 pending_article = article.copy()
-            elif "text" in pending_article:
+            elif "text" in pending_article and pending_article["text"] != line[3:]:
                 result.append(pending_article)
                 pending_article = article.copy()
             pending_text = True
