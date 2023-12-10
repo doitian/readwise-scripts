@@ -5,9 +5,6 @@ import fileinput
 import json
 
 
-# TODO: notes
-
-
 # Example:
 #
 # ```

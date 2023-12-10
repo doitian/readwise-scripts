@@ -4,8 +4,6 @@ import fileinput
 import json
 import utils
 
-# TODO: notes
-
 # Example:
 #
 # ```
@@ -30,91 +28,91 @@ def collect_highlights(lines):
     auto_title_level = 1
 
     article = {
-        'title': None,
-        'author': None,
-        'source_type': 'Boox',
-        'category': 'books'
+        "title": None,
+        "author": None,
+        "source_type": "Boox",
+        "category": "books",
     }
     result = []
     pending_article = None
     for line in lines:
         line = line.strip()
-        if line.startswith('Reading Notes '):
-            title_author_section = line.split('<<')[1]
-            title_author, section = title_author_section.split('>>')
-            title, author = title_author.rsplit(' - ', maxsplit=1)
-            article['title'] = title
-            article['author'] = author
-            if ' // ' in section:
+        if line.startswith("Reading Notes "):
+            title_author_section = line.split("<<")[1]
+            title_author, section = title_author_section.split(">>")
+            title, author = title_author.rsplit(" - ", maxsplit=1)
+            article["title"] = title
+            article["author"] = author
+            if " // " in section:
                 auto_title_level = 2
-                h1, h2 = section.split(' // ')
+                h1, h2 = section.split(" // ")
                 pending_article = article.copy()
-                pending_article['text'] = h1
-                pending_article['note'] = '.h1'
+                pending_article["text"] = h1
+                pending_article["note"] = ".h1"
                 result.append(pending_article)
                 pending_article = article.copy()
-                pending_article['text'] = h2
-                pending_article['note'] = '.h2'
+                pending_article["text"] = h2
+                pending_article["note"] = ".h2"
                 result.append(pending_article)
                 last_auto_title = h2
             else:
                 pending_article = article.copy()
-                pending_article['text'] = section
-                pending_article['note'] = '.h1'
+                pending_article["text"] = section
+                pending_article["note"] = ".h1"
                 result.append(pending_article)
                 last_auto_title = section
             pending_article = article.copy()
-        elif 'Page No.: ' in line:
+        elif "Page No.: " in line:
             if pending_article is None:
-                raise RuntimeError('expect pending article')
-            if 'location' in pending_article:
-                raise RuntimeError('expect new pending article: ' + line)
-            pending_article['location_type'] = 'page'
-            pending_article['location'] = int(line.split('Page No.: ')[1])
-            pending_article['highlighted_at'] = line.split(
-                '  |  ')[0].replace(' ', 'T') + ':00+08:00'
+                raise RuntimeError("expect pending article")
+            if "location" in pending_article:
+                raise RuntimeError("expect new pending article: " + line)
+            pending_article["location_type"] = "page"
+            pending_article["location"] = int(line.split("Page No.: ")[1])
+            pending_article["highlighted_at"] = (
+                line.split("  |  ")[0].replace(" ", "T") + ":00+08:00"
+            )
             for prev_article in reversed(result):
-                if 'location' in prev_article:
+                if "location" in prev_article:
                     break
-                prev_article['location_type'] = 'page'
-                prev_article['location'] = pending_article['location']
-        elif line.startswith('-------------------'):
+                prev_article["location_type"] = "page"
+                prev_article["location"] = pending_article["location"]
+        elif line.startswith("-------------------"):
             if pending_article is None:
-                raise RuntimeError('expect pending article')
+                raise RuntimeError("expect pending article")
             result.append(pending_article)
             pending_article = article.copy()
-        elif pending_article is not None and 'location' in pending_article:
-            if 'text' in pending_article:
-                pending_article['text'] = "\n".join(
-                    [pending_article['text'], line])
+        elif pending_article is not None and "location" in pending_article:
+            if "text" in pending_article:
+                pending_article["text"] = "\n".join([pending_article["text"], line])
             else:
-                pending_article['text'] = line
+                pending_article["text"] = line
         elif pending_article is not None:
             section = line.strip()
-            if ' // ' in section:
-                h1, h2 = section.split(' // ')
+            if " // " in section:
+                h1, h2 = section.split(" // ")
                 title_article = article.copy()
-                title_article['text'] = h1
-                title_article['note'] = '.h1'
+                title_article["text"] = h1
+                title_article["note"] = ".h1"
                 result.append(title_article)
                 title_article = article.copy()
-                title_article['text'] = h2
-                title_article['note'] = '.h2'
+                title_article["text"] = h2
+                title_article["note"] = ".h2"
                 result.append(title_article)
             elif section != last_auto_title:
                 last_auto_title = section
                 title_article = article.copy()
-                title_article['text'] = section
-                title_article['note'] = f'.h{auto_title_level}'
+                title_article["text"] = section
+                title_article["note"] = f".h{auto_title_level}"
                 result.append(title_article)
         else:
-            raise RuntimeError('unexpected line: ' + line)
+            raise RuntimeError("unexpected line: " + line)
 
     return result
 
 
 def main(args):
-    dry_run = args[1] == '-n' if len(sys.argv) > 1 else False
+    dry_run = args[1] == "-n" if len(sys.argv) > 1 else False
     input_args = args[1:] if not dry_run else args[2:]
     highlights = collect_highlights(fileinput.input(input_args))
 
@@ -125,7 +123,7 @@ def main(args):
     utils.create_highlights(highlights)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
 
     main(sys.argv)
