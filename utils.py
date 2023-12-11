@@ -67,6 +67,15 @@ def add_tags(highlights, ids, token, user_agent):
                 urlopen(req)
 
 
+def auto_number_highlights(highlights):
+    if any("location" in item for item in highlights):
+        return
+
+    for index, highlight in enumerate(highlights):
+        highlight["location_type"] = "order"
+        highlight["location"] = index + 1
+
+
 def create_highlights(highlights, token=None, user_agent=None):
     if token is None:
         token = os.environ["READWISE_TOKEN"]
@@ -74,6 +83,7 @@ def create_highlights(highlights, token=None, user_agent=None):
         user_agent = os.environ["USER_AGENT"]
 
     highlights = list(squash_concatenating_highlights(highlights))
+    auto_number_highlights(highlights)
 
     req = Request(
         "https://readwise.io/api/v2/highlights/",
