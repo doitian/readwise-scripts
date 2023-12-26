@@ -5,6 +5,21 @@ import json
 import time
 
 
+def urlopen_retry(req):
+    retries = 10
+    interval = 2
+    while retries > 0:
+        try:
+            return urlopen(req)
+        except HTTPError:
+            time.sleep(interval)
+            retries -= 1
+            interval *= 2
+
+    time.sleep(interval)
+    return urlopen(req)
+
+
 def is_concatenating(entry):
     return (
         "note" in entry
@@ -53,6 +68,7 @@ def add_tags(highlights, ids, token, user_agent):
     for entry, id in zip(highlights, ids):
         if "note" in entry and entry["note"].startswith("."):
             for tag in entry["note"].splitlines()[0].split():
+                print(f"tag: {tag[1:]}")
                 req = Request(
                     f"https://readwise.io/api/v2/highlights/{id}/tags/",
                     headers={
@@ -64,7 +80,7 @@ def add_tags(highlights, ids, token, user_agent):
                     data=json.dumps({"name": tag[1:]}).encode("utf-8"),
                     method="POST",
                 )
-                urlopen(req)
+                urlopen_retry(req)
 
 
 def auto_number_highlights(highlights):
@@ -96,12 +112,8 @@ def create_highlights(highlights, token=None, user_agent=None):
         data=json.dumps({"highlights": highlights}).encode("utf-8"),
         method="POST",
     )
-    resp = urlopen(req)
+    resp = urlopen_retry(req)
 
     items = json.loads(resp.read().decode("utf-8"))
     if len(items) == 1 and len(items[0]["modified_highlights"]) == len(highlights):
-        try:
-            add_tags(highlights, items[0]["modified_highlights"], token, user_agent)
-        except HTTPError:
-            time.sleep(5)
-            add_tags(highlights, items[0]["modified_highlights"], token, user_agent)
+        add_tags(highlights, items[0]["modified_highlights"], token, user_agent)
