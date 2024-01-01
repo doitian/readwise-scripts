@@ -68,7 +68,6 @@ def add_tags(highlights, ids, token, user_agent):
     for entry, id in zip(highlights, ids):
         if "note" in entry and entry["note"].startswith("."):
             for tag in entry["note"].splitlines()[0].split():
-                print(f"tag: {tag[1:]}")
                 req = Request(
                     f"https://readwise.io/api/v2/highlights/{id}/tags/",
                     headers={
