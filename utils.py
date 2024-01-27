@@ -68,6 +68,7 @@ def add_tags(highlights, ids, token, user_agent):
     for entry, id in zip(highlights, ids):
         if "note" in entry and entry["note"].startswith("."):
             for tag in entry["note"].splitlines()[0].split():
+                print(f"Adding tag {tag} to {entry['text']}...")
                 req = Request(
                     f"https://readwise.io/api/v2/highlights/{id}/tags/",
                     headers={
@@ -111,6 +112,7 @@ def create_highlights(highlights, token=None, user_agent=None):
         data=json.dumps({"highlights": highlights}).encode("utf-8"),
         method="POST",
     )
+    print("Creating highlights...")
     resp = urlopen_retry(req)
 
     items = json.loads(resp.read().decode("utf-8"))
