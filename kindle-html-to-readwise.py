@@ -35,6 +35,11 @@ def collect_highlights(soup):
             heading_parts = div.get_text().strip().split(" - Location ")
             if len(heading_parts) == 2:
                 article["text"] = f'{article["text"]} (Loc {heading_parts[1]})'
+            else:
+                heading_parts = div.get_text().strip().split(" · Location ")
+                if len(heading_parts) == 2:
+                    article["text"] = f'{article["text"]} (Loc {heading_parts[1]})'
+
             result.append(article)
             if len(siblings) == 2:
                 raise RuntimeError(
@@ -51,7 +56,7 @@ def collect_highlights(soup):
                 raise RuntimeError(
                     f"{div.get_text().strip()} has unknown following siblings"
                 )
-            if "Note" in siblings[1].get_text():
+            if len(siblings) > 1 and "Note" in siblings[1].get_text():
                 article["note"] = siblings[2].get_text().strip()
 
             color_span = div.find("span")
