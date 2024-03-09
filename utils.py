@@ -117,4 +117,5 @@ def create_highlights(highlights, token=None, user_agent=None):
 
     items = json.loads(resp.read().decode("utf-8"))
     if len(items) == 1 and len(items[0]["modified_highlights"]) == len(highlights):
-        add_tags(highlights, items[0]["modified_highlights"], token, user_agent)
+        # add_tags(highlights, items[0]["modified_highlights"], token, user_agent)
+        pass
