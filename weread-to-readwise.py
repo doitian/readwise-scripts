@@ -94,7 +94,7 @@ def collect_highlights(lines):
             else:
                 pending_article["text"] = pending_article["text"] + "\n" + line
         elif state == "highlight-ending":
-            if line == "":
+            if line == "" or line == "-- 来自微信读书":
                 finalize_article(result, pending_article)
                 pending_article = None
                 state = "body"
