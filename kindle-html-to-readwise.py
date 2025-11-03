@@ -14,10 +14,11 @@ ZH = {
     "Note": "笔记",
     " · Location ": " >  位置 ",
 }
+LANG = EN
 
 
 def _(key):
-    return ZH.get(key, key)
+    return LANG.get(key, key)
 
 
 def collect_highlights(soup):
@@ -47,16 +48,16 @@ def collect_highlights(soup):
             article["text"] = siblings[0].get_text().strip()
             heading_parts = div.get_text().strip().split(_(" - Location "))
             if len(heading_parts) == 2:
-                article["text"] = f'{article["text"]} (Loc {heading_parts[1]})'
+                article["text"] = f"{article['text']} (Loc {heading_parts[1]})"
             else:
                 heading_parts = div.get_text().strip().split(_(" · Location "))
                 if len(heading_parts) == 2:
-                    article["text"] = f'{article["text"]} (Loc {heading_parts[1]})'
+                    article["text"] = f"{article['text']} (Loc {heading_parts[1]})"
                     chapter_parts = heading_parts[0].split(") - ", maxsplit=1)
                     if len(chapter_parts) == 2 and chapter_parts[1] != last_chapter:
                         last_chapter = chapter_parts[1]
                         chapter_article = article_template.copy()
-                        chapter_article["text"] = chapter_parts[1]
+                        chapter_article["text"] = chapter_parts[1].split(" > Page ")[0]
                         chapter_article["note"] = ".h2"
                         result.append(chapter_article)
 
@@ -103,11 +104,16 @@ def add_tag(note, tag):
 
 
 def main(args):
+    global LANG
+
     dry_run = args[1] == "-n" if len(sys.argv) > 1 else False
     input_args = args[1:] if not dry_run else args[2:]
-    soup = BeautifulSoup(
-        "".join(line for line in fileinput.input(input_args)), "html.parser"
-    )
+    input_text = "".join(line for line in fileinput.input(input_args))
+    for v in ZH.values():
+        if input_text.find(v) != -1:
+            LANG = ZH
+            break
+    soup = BeautifulSoup(input_text, "html.parser")
     highlights = collect_highlights(soup)
 
     if dry_run:
