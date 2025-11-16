@@ -1,4 +1,5 @@
 import os
+import sys
 from urllib.request import urlopen, Request
 from urllib.error import HTTPError
 import json
@@ -11,7 +12,14 @@ def urlopen_retry(req):
     while retries > 0:
         try:
             return urlopen(req)
-        except HTTPError:
+        except HTTPError as err:
+            if err.code == 429:
+                retry_after = err.headers.get("Retry-After")
+                print(
+                    f"Rate limited. Retry after: {retry_after} seconds", file=sys.stderr
+                )
+                os.exit(-1)
+
             time.sleep(interval)
             retries -= 1
             interval *= 2
