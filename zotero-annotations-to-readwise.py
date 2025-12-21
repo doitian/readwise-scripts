@@ -87,12 +87,18 @@ def format_highlight(entry, highlight_tags, annotation):
         else:
             entry["note"] = annotation
     data = json.loads(urllib.parse.unquote(highlight_tags[0]["data-annotation"]))
+    is_epub = data["position"].get("type", "") == "FragmentSelector"
     item_key = data["attachmentURI"].split("/")[-1]
-    entry["location_type"] = "page"
-    entry["location"] = int(data["pageLabel"])
-    entry["highlight_url"] = (
-        f"zotero://open-pdf/library/items/{item_key}?page={data['position']['pageIndex']}&annotation={data['annotationKey']}"
-    )
+    if not is_epub:
+        entry["location_type"] = "page"
+        entry["location"] = int(data["pageLabel"])
+        entry["highlight_url"] = (
+            f"zotero://open-pdf/library/items/{item_key}?page={data['position']['pageIndex']}&annotation={data['annotationKey']}"
+        )
+    else:
+        entry["highlight_url"] = (
+            f"zotero://open-pdf/library/items/{item_key}?annotation={data['annotationKey']}"
+        )
 
     return entry
 
