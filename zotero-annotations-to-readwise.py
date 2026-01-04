@@ -2,12 +2,34 @@
 
 # ruff: noqa: E501
 
+import shutil
 import utils
 from titlecase import titlecase
 import json
 import urllib.parse
 from urllib.request import urlopen, Request
 from bs4 import BeautifulSoup
+from pathlib import Path
+from datetime import datetime
+
+UPLOADS_SITE = "https://blog.iany.me"
+ZOTERO_STORAGE_DIR = Path.home() / "Zotero" / "storage"
+UPLOADS_DIR = Path("uploads") / datetime.now().strftime("%Y%m") / "zotero"
+
+
+def get_image_path(attachment_key):
+    dir = ZOTERO_STORAGE_DIR / attachment_key
+    for ext in ["jpg", "jpeg", "png", "gif", "webp"]:
+        try_path = dir / f"image.{ext}"
+        if try_path.exists():
+            return try_path
+
+
+def copy_image(attachment_key):
+    image_path = get_image_path(attachment_key)
+    if image_path:
+        # copy the image directory into UPLOADS_DIR
+        shutil.copytree(image_path.parent, UPLOADS_DIR / image_path.parent.name, dirs_exist_ok=True)
 
 
 def get_items():
@@ -55,23 +77,63 @@ def collect_highlights(item, highlights):
             highlight_tags = []
             for tag in p.select("span.highlight"):
                 highlight_tags.append(tag.extract())
+            for tag in p.select("span.underline"):
+                highlight_tags.append(tag.extract())
+            for tag in p.select("img.data-annotation"):
+                highlight_tags.append(tag.extract())
             for tag in p.select("span.citation"):
                 tag.decompose()
-            annotation = p.get_text(strip=True)
+            annotation = bs2md(p).strip()
             highlights.append(
                 format_highlight(article.copy(), highlight_tags, annotation)
             )
+
+
+def get_highlight_text(highlight):
+    text = bs2md(BeautifulSoup(replace_br(highlight), "html.parser")).strip()
+    if text.startswith("“") and text.endswith("”"):
+        return text[1:-1]
+    if text.startswith("\u201c") and text.endswith("\u201d"):
+        return text[1:-1]
+    return text
 
 
 def replace_br(html):
     return str(html).replace("<br/>", "\n").replace("<br>", "\n")
 
 
-def get_highlight_text(highlight):
-    text = BeautifulSoup(replace_br(highlight), "html.parser").get_text().strip()
-    if text.startswith("“") and text.endswith("”"):
-        return text[1:-1]
-    return text
+def bs2md(bs):
+    from bs4 import NavigableString
+
+    if bs is None:
+        return ""
+
+    # If it's a text node (NavigableString), return the text
+    if isinstance(bs, NavigableString):
+        return str(bs)
+
+    # If it's a Tag, process it
+    if hasattr(bs, "name"):
+        inner = "".join(bs2md(child) for child in bs.children)
+        if bs.name in ["b", "strong"]:
+            return f"**{inner}**"
+        elif bs.name in ["i", "em", "emph"]:
+            return f"*{inner}*"
+        elif bs.name == "code":
+            return f"`{inner}`"
+        elif bs.name == "img":
+            attachment_key = bs.get("data-attachment-key")
+            image_path = get_image_path(attachment_key)
+            if image_path is None:
+                raise RuntimeError(f"Image not found: {attachment_key}")
+
+            copy_image(attachment_key)
+            return f"![{attachment_key}]({UPLOADS_SITE}/{UPLOADS_DIR.as_posix()}/{attachment_key}/{image_path.name})"
+        else:
+            return inner
+
+    # Fallback for other types
+    return bs.get_text()
 
 
 def format_highlight(entry, highlight_tags, annotation):
