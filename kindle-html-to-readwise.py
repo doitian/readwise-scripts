@@ -7,14 +7,7 @@ from bs4 import BeautifulSoup
 
 import utils
 
-EN = {}
-ZH = {
-    "Highlight": "标注",
-    " - Location ": " -  位置 ",
-    "Note": "笔记",
-    " · Location ": " >  位置 ",
-}
-LANG = EN
+LANG = {}
 
 
 def _(key):
@@ -104,15 +97,10 @@ def add_tag(note, tag):
 
 
 def main(args):
-    global LANG
-
     dry_run = args[1] == "-n" if len(sys.argv) > 1 else False
     input_args = args[1:] if not dry_run else args[2:]
     input_text = "".join(line for line in fileinput.input(input_args))
-    for v in ZH.values():
-        if input_text.find(v) != -1:
-            LANG = ZH
-            break
+
     soup = BeautifulSoup(input_text, "html.parser")
     highlights = collect_highlights(soup)
 
