@@ -47,10 +47,15 @@ def collect_highlights(soup):
                 if len(heading_parts) == 2:
                     article["text"] = f"{article['text']} (Loc {heading_parts[1]})"
                     chapter_parts = heading_parts[0].split(") - ", maxsplit=1)
-                    if len(chapter_parts) == 2 and chapter_parts[1] != last_chapter:
-                        last_chapter = chapter_parts[1]
+                    current_chapter = (
+                        chapter_parts[1].split(" > Page ")[0]
+                        if len(chapter_parts) == 2
+                        else None
+                    )
+                    if current_chapter is not None and current_chapter != last_chapter:
+                        last_chapter = current_chapter
                         chapter_article = article_template.copy()
-                        chapter_article["text"] = chapter_parts[1].split(" > Page ")[0]
+                        chapter_article["text"] = current_chapter
                         chapter_article["note"] = ".h2"
                         result.append(chapter_article)
 
