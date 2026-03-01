@@ -49,7 +49,7 @@ def collect_highlights(soup):
                     chapter_parts = heading_parts[0].split(") - ", maxsplit=1)
                     current_chapter = (
                         chapter_parts[1].split(" > Page ")[0]
-                        if len(chapter_parts) == 2
+                        if len(chapter_parts) == 2 and " > Page " in chapter_parts[1]
                         else None
                     )
                     if current_chapter is not None and current_chapter != last_chapter:
@@ -104,7 +104,7 @@ def add_tag(note, tag):
 def main(args):
     dry_run = args[1] == "-n" if len(sys.argv) > 1 else False
     input_args = args[1:] if not dry_run else args[2:]
-    input_text = "".join(line for line in fileinput.input(input_args))
+    input_text = "".join(line for line in fileinput.input(input_args, encoding="utf-8"))
 
     soup = BeautifulSoup(input_text, "html.parser")
     highlights = collect_highlights(soup)
