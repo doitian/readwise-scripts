@@ -153,7 +153,11 @@ def format_highlight(entry, highlight_tags, annotation):
     item_key = data["attachmentURI"].split("/")[-1]
     if not is_epub:
         entry["location_type"] = "page"
-        entry["location"] = int(data["pageLabel"])
+        try:
+            entry["location"] = int(data["pageLabel"])
+        except ValueError, TypeError:
+            entry["location"] = 0
+
         entry["highlight_url"] = (
             f"zotero://open-pdf/library/items/{item_key}?page={data['position']['pageIndex']}&annotation={data['annotationKey']}"
         )
