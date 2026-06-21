@@ -34,7 +34,7 @@ def copy_image(attachment_key):
 
 def get_items():
     with urlopen(
-        "http://127.0.0.1:23119/better-bibtex/cayw?selected=1&format=translate&translator=csljson"
+        "http://127.0.0.1:23119/better-bibtex/cayw?&format=translate&translator=csljson"
     ) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
