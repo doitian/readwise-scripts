@@ -29,7 +29,9 @@ def copy_image(attachment_key):
     image_path = get_image_path(attachment_key)
     if image_path:
         # copy the image directory into UPLOADS_DIR
-        shutil.copytree(image_path.parent, UPLOADS_DIR / image_path.parent.name, dirs_exist_ok=True)
+        shutil.copytree(
+            image_path.parent, UPLOADS_DIR / image_path.parent.name, dirs_exist_ok=True
+        )
 
 
 def get_items():
