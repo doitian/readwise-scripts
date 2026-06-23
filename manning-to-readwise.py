@@ -39,22 +39,24 @@ def process_manning(input_data):
     result = []
 
     for chapter_title, items in chapters.items():
-        result.append({
-            "text": chapter_title,
-            "note": ".h1",
-        })
-
-        green_texts = []
-        other_entries = []
+        result.append(
+            {
+                "text": chapter_title,
+                "note": ".h1",
+            }
+        )
 
         for item in items:
             notes_text = None
             if "notes" in item and item["notes"]:
-                notes_text = item["notes"][0]["text"]
+                notes_text = "\n\n".join(
+                    n["text"] for n in item["notes"] if n.get("text")
+                )
                 if notes_text.startswith(".ignore"):
                     continue
-
             unique_hl = deduplicate_highlights(item.get("highlights", []))
+
+            item_green_texts = []
 
             for hl in unique_hl:
                 hl_text = hl["text"].strip()
@@ -69,26 +71,19 @@ def process_manning(input_data):
                     entry["note"] = notes_text
 
                 if hl["color"] == "green":
-                    green_texts.append(hl_text)
-                elif notes_text:
-                    other_entries.append(entry)
-                    notes_text = None
+                    item_green_texts.append(hl_text)
                 else:
-                    other_entries.append(entry)
+                    result.append(entry)
 
-        if green_texts:
-            merged_text = "\n".join(dict.fromkeys(green_texts))
-            merged_entry = {
-                "text": merged_text,
-                "highlight_url": items[0].get("link", ""),
-            }
-            result.append(merged_entry)
-
-        seen = set()
-        for entry in other_entries:
-            if entry["text"] not in seen:
-                seen.add(entry["text"])
-                result.append(entry)
+            if item_green_texts:
+                merged_text = "\n".join(dict.fromkeys(item_green_texts))
+                merged_entry = {
+                    "text": merged_text,
+                    "highlight_url": item.get("link", ""),
+                }
+                if notes_text:
+                    merged_entry["note"] = notes_text
+                result.append(merged_entry)
 
     base = {
         "title": book_title,
