@@ -16,7 +16,7 @@ def deduplicate_highlights(highlights):
     seen = set()
     result = []
     for h in highlights:
-        key = (h["color"], h["text"].strip())
+        key = h["text"].strip()
         if key not in seen:
             seen.add(key)
             result.append(h)
@@ -38,6 +38,18 @@ def process_manning(input_data):
 
     result = []
 
+    def flush_pending(pending_green, pending_notes_list, pending_url):
+        if not pending_green:
+            return
+        merged_text = "\n".join(dict.fromkeys(pending_green))
+        merged_entry = {
+            "text": merged_text,
+            "highlight_url": pending_url,
+        }
+        if pending_notes_list:
+            merged_entry["note"] = "\n\n".join(dict.fromkeys(pending_notes_list))
+        result.append(merged_entry)
+
     for chapter_title, items in chapters.items():
         result.append(
             {
@@ -46,6 +58,11 @@ def process_manning(input_data):
             }
         )
 
+        pending_green = []
+        pending_notes_list = []
+        pending_url = ""
+        items_to_merge = 0
+
         for item in items:
             notes_text = None
             if "notes" in item and item["notes"]:
@@ -53,9 +70,16 @@ def process_manning(input_data):
                     n["text"] for n in item["notes"] if n.get("text")
                 )
                 if notes_text.startswith(".ignore"):
+                    flush_pending(pending_green, pending_notes_list, pending_url)
+                    pending_green = []
+                    pending_notes_list = []
+                    items_to_merge = 0
                     continue
             unique_hl = deduplicate_highlights(item.get("highlights", []))
 
+            green_count = sum(
+                1 for h in item.get("highlights", []) if h["color"] == "green"
+            )
             item_green_texts = []
 
             for hl in unique_hl:
@@ -63,27 +87,41 @@ def process_manning(input_data):
                 if not hl_text:
                     continue
 
-                entry = {
-                    "text": hl_text,
-                    "highlight_url": item.get("link", ""),
-                }
-                if notes_text:
-                    entry["note"] = notes_text
+                if hl["color"] == "gray":
+                    continue
 
                 if hl["color"] == "green":
                     item_green_texts.append(hl_text)
                 else:
+                    flush_pending(pending_green, pending_notes_list, pending_url)
+                    pending_green = []
+                    pending_notes_list = []
+                    items_to_merge = 0
+
+                    entry = {
+                        "text": hl_text,
+                        "highlight_url": item.get("link", ""),
+                    }
+                    if notes_text:
+                        entry["note"] = notes_text
                     result.append(entry)
 
             if item_green_texts:
-                merged_text = "\n".join(dict.fromkeys(item_green_texts))
-                merged_entry = {
-                    "text": merged_text,
-                    "highlight_url": item.get("link", ""),
-                }
-                if notes_text:
-                    merged_entry["note"] = notes_text
-                result.append(merged_entry)
+                pending_green.extend(item_green_texts)
+                if notes_text and notes_text.strip():
+                    pending_notes_list.append(notes_text)
+                pending_url = item.get("link", "")
+
+                if items_to_merge == 0 and green_count > 0:
+                    items_to_merge = green_count
+                if items_to_merge > 0:
+                    items_to_merge -= 1
+                    if items_to_merge == 0:
+                        flush_pending(pending_green, pending_notes_list, pending_url)
+                        pending_green = []
+                        pending_notes_list = []
+
+        flush_pending(pending_green, pending_notes_list, pending_url)
 
     base = {
         "title": book_title,
